@@ -31,17 +31,20 @@ class UserController extends AbstractController
     #[IsGranted('IS_AUTHENTICATED_FULLY')]
     public function currentUserProfile(Request $request, EntityManagerInterface $em, UserPasswordHasherInterface $passwordHasher): Response
     {
+        /** @var \App\Entity\User $user */
         $user = $this->getUser();
         $userForm = $this->createForm(UserType::class, $user);
         $userForm->remove('password');
-        $userForm->add('newPassword', PasswordType::class, ['label' => 'Nouveau mot de passe']);
+        $userForm->add('newPassword', PasswordType::class, ['label' => 'Nouveau mot de passe', 'required' => false]);
         $userForm->handleRequest($request);
         if($userForm->isSubmitted() && $userForm->isValid()){
             $newPassword = $user->getNewPassword();
-            if($nePassword){
+            if($newPassword){
                 $hash = $passwordHasher->hashPassword($user, $newPassword);
                 $user->setPassword($hash);
             }
+            $em->flush();
+            $this->addFlash('success', 'Profil mis à jour');
         }
 
         return $this->render('user/index.html.twig', [
